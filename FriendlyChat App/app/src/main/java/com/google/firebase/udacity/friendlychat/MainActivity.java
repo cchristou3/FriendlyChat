@@ -1,20 +1,13 @@
 package com.google.firebase.udacity.friendlychat;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProvider;
-
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -22,10 +15,15 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.google.firebase.database.DataSnapshot;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.firebase.ui.auth.AuthUI;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
+import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -46,8 +44,13 @@ public class MainActivity extends AppCompatActivity {
     private Button mSendButton;
 
     private String mUsername;
+    private FirebaseQueryLiveData liveData;
 
     private MessagesRepository mMessagesRepository;
+
+    // Firebase instance variables
+    private FirebaseAuth mFirebaseAuth;
+    private FirebaseAuth.AuthStateListener mAuthStateListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,27 +60,36 @@ public class MainActivity extends AppCompatActivity {
         mUsername = ANONYMOUS;
 
         // Initialize references to views
-        mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
-        mMessageListView = (ListView) findViewById(R.id.messageListView);
-        mPhotoPickerButton = (ImageButton) findViewById(R.id.photoPickerButton);
-        mMessageEditText = (EditText) findViewById(R.id.messageEditText);
-        mSendButton = (Button) findViewById(R.id.sendButton);
+        mProgressBar = findViewById(R.id.progressBar);
+        mMessageListView = findViewById(R.id.messageListView);
+        mPhotoPickerButton = findViewById(R.id.photoPickerButton);
+        mMessageEditText = findViewById(R.id.messageEditText);
+        mSendButton = findViewById(R.id.sendButton);
+
+        // Initialize Firebase Components
+        mFirebaseAuth = FirebaseAuth.getInstance();
+        mAuthStateListener = firebaseAuth -> {
+            FirebaseUser user = firebaseAuth.getCurrentUser();
+            if (user != null){
+                // User is signed in
+                onSignedInInitialize(user.getDisplayName());
+            } else {
+                // User is signed out
+                onSignOutCleanUp();
+                startActivityForResult(
+                        AuthUI.getInstance()
+                                .createSignInIntentBuilder()
+                                .setIsSmartLockEnabled(false) // automatically save the user's credentials = disabled
+                                .setAvailableProviders(Arrays.asList(
+                                        new AuthUI.IdpConfig.GoogleBuilder().build(),
+                                        new AuthUI.IdpConfig.EmailBuilder().build()))
+                                .build(),
+                        RC_SIGN_IN);
+            }
+        };
 
         // Initialize the messages repository
         mMessagesRepository = new MessagesRepository();
-
-        // Obtain a new or prior instance of MessagesViewModel from the
-        // ViewModelProviders utility class.
-        ViewModelProvider.AndroidViewModelFactory modelFactory = new ViewModelProvider.AndroidViewModelFactory(getApplication());
-        MessagesViewModel viewModel = new ViewModelProvider(this, modelFactory).get(MessagesViewModel.class);
-        Log.d(TAG, viewModel.toString());
-        LiveData<List<FriendlyMessage>> liveData = viewModel.getMessagesLiveData();
-        liveData.observe(this, friendlyMessages -> {
-            // Initialize message ListView and its adapter
-            mMessageAdapter = new MessageAdapter(this, R.layout.item_message,friendlyMessages);
-            // Set adapter to listview reference
-            mMessageListView.setAdapter(mMessageAdapter);
-        });
 
         // Initialize progress bar
         mProgressBar.setVisibility(ProgressBar.INVISIBLE);
@@ -102,6 +114,56 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void onSignOutCleanUp() {
+        mUsername = ANONYMOUS;
+        if(liveData != null) {
+            liveData.removeObservers(this);
+            liveData.detachDatabaseListener();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == RC_SIGN_IN){
+            if(resultCode == RESULT_OK){
+                Toast.makeText(this, "Signed in!", Toast.LENGTH_SHORT).show();
+            }else {
+                Toast.makeText(this, "Signed in cancelled!", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        }
+    }
+
+    private void onSignedInInitialize(String displayName) {
+        mUsername = displayName;
+        // Obtain a new or prior instance of MessagesViewModel from the
+        // ViewModelProvider.AndroidViewModelFactory utility class.
+        ViewModelProvider.AndroidViewModelFactory modelFactory = new ViewModelProvider.AndroidViewModelFactory(getApplication());
+        MessagesViewModel viewModel = new ViewModelProvider(this, modelFactory).get(MessagesViewModel.class);
+        liveData = viewModel.getMessagesLiveData();
+        liveData.observe(this, friendlyMessages -> {
+            // Initialize message ListView and its adapter
+            mMessageAdapter = new MessageAdapter(this, R.layout.item_message,friendlyMessages);
+            // Set adapter to listview reference
+            mMessageListView.setAdapter(mMessageAdapter);
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mFirebaseAuth.addAuthStateListener(mAuthStateListener);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mAuthStateListener != null) {
+            mFirebaseAuth.removeAuthStateListener(mAuthStateListener);
+        }
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -113,6 +175,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.sign_out_menu:
+                AuthUI.getInstance().signOut(this);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

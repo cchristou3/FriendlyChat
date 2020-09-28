@@ -5,7 +5,6 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
-import androidx.lifecycle.MutableLiveData;
 
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -20,17 +19,26 @@ public class FirebaseQueryLiveData extends LiveData<List<FriendlyMessage>> {
 
     private List<FriendlyMessage> messageList = new ArrayList<>();
     private final Query query;
-    private final MessagesValueEventListener mValueEventListener = new MessagesValueEventListener();
+    private MessagesValueEventListener mValueEventListener;
 
     public FirebaseQueryLiveData(Query query) {
         this.query = query;
+    }
+
+    public void detachDatabaseListener(){
+        if(mValueEventListener != null) {
+            query.removeEventListener(mValueEventListener);
+        }
     }
 
     @Override
     protected void onActive() { // When onStart - onResume lifecycle
         super.onActive();
         Log.d(LOG_TAG, "onActive");
-        messageList = new ArrayList<>();
+        /* We empty the list before we re-fetch the data from the Firebase database
+         in order to avoid duplicates */
+        messageList.removeAll(messageList);
+        mValueEventListener = new MessagesValueEventListener();
         query.addChildEventListener(mValueEventListener);
     }
 
@@ -38,8 +46,11 @@ public class FirebaseQueryLiveData extends LiveData<List<FriendlyMessage>> {
     protected void onInactive() { // When onPause - onStop lifecycle
         super.onInactive();
         Log.d(LOG_TAG, "onInactive");
-        messageList = new ArrayList<>();
+        /* We empty the list before we re-fetch the data from the Firebase database
+         in order to avoid duplicates */
+        messageList.removeAll(messageList);
         query.removeEventListener(mValueEventListener);
+        mValueEventListener = null;
     }
 
     private class MessagesValueEventListener implements ChildEventListener {
