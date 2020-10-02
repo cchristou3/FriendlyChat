@@ -11,13 +11,14 @@ import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
@@ -27,7 +28,7 @@ import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TAG = "MainActivity";
+    public static final String TAG = "MainActivityCompanion";
 
     public static final String ANONYMOUS = "anonymous";
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 1000;
@@ -36,8 +37,9 @@ public class MainActivity extends AppCompatActivity {
     public static final int RC_SIGN_IN = 1;
     private static final int RC_PHOTO_PICKER = 2;
 
-    private ListView mMessageListView;
-    private MessageAdapter mMessageAdapter;
+    private RecyclerView mMessageRecyclerView;
+    private MessageRecyclerViewAdapter mMessageAdapter;
+    private RecyclerView.LayoutManager mLayoutManager;
     private ProgressBar mProgressBar;
     private ImageButton mPhotoPickerButton;
     private EditText mMessageEditText;
@@ -61,10 +63,15 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize references to views
         mProgressBar = findViewById(R.id.progressBar);
-        mMessageListView = findViewById(R.id.messageListView);
         mPhotoPickerButton = findViewById(R.id.photoPickerButton);
         mMessageEditText = findViewById(R.id.messageEditText);
         mSendButton = findViewById(R.id.sendButton);
+        mMessageRecyclerView = findViewById(R.id.messageRecyclerView);
+
+        // Set up the RecyclerView with a Layout Manager
+        mLayoutManager = new LinearLayoutManager(this);
+        mMessageRecyclerView.setLayoutManager(mLayoutManager);
+        mMessageRecyclerView.setHasFixedSize(true);
 
         // Initialize Firebase Components
         mFirebaseAuth = FirebaseAuth.getInstance();
@@ -94,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
         // Initialize progress bar
         mProgressBar.setVisibility(ProgressBar.INVISIBLE);
 
-        // ImagePickerButton shows an image picker to upload a image for a message
+        // ImagePickerButton shows an image picker to upload a image for a message - TODO
         mPhotoPickerButton.setOnClickListener(view -> { });
 
         // Enable Send button when there's text to send
@@ -142,11 +149,20 @@ public class MainActivity extends AppCompatActivity {
         ViewModelProvider.AndroidViewModelFactory modelFactory = new ViewModelProvider.AndroidViewModelFactory(getApplication());
         MessagesViewModel viewModel = new ViewModelProvider(this, modelFactory).get(MessagesViewModel.class);
         liveData = viewModel.getMessagesLiveData();
+
+        // When you update the value stored in the LiveData object, it triggers all registered observers
         liveData.observe(this, friendlyMessages -> {
             // Initialize message ListView and its adapter
-            mMessageAdapter = new MessageAdapter(this, R.layout.item_message,friendlyMessages);
-            // Set adapter to listview reference
-            mMessageListView.setAdapter(mMessageAdapter);
+            if (mMessageAdapter == null){
+                // Create a new MessageRecyclerViewAdapter instance and pass it the list of messages
+                mMessageAdapter = new MessageRecyclerViewAdapter(friendlyMessages);
+                // Pass adapter object to LiveData
+                liveData.setMessageRecyclerViewAdapter(mMessageAdapter);
+                // Register an observer for the adapter's data
+                mMessageAdapter.registerAdapterDataObserver(new MessageRVAdapterDataObserver(mMessageRecyclerView));
+                // Set adapter to RecyclerView reference
+                mMessageRecyclerView.setAdapter(mMessageAdapter);
+            }
         });
     }
 

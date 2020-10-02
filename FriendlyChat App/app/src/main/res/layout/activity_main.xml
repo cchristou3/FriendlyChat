@@ -10,8 +10,8 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.google.firebase.udacity.friendlychat.MainActivity">
 
-    <ListView
-        android:id="@+id/messageListView"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/messageRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@+id/linearLayout"
@@ -30,12 +30,16 @@
         android:orientation="horizontal">
 
         <ImageButton
+            android:contentDescription="ImagePicker"
             android:id="@+id/photoPickerButton"
             android:layout_width="36dp"
             android:layout_height="36dp"
             android:background="@android:drawable/ic_menu_gallery" />
 
         <EditText
+            android:hint="Write a message..."
+            android:autofillHints=""
+            android:inputType="text"
             android:id="@+id/messageEditText"
             android:layout_width="0dp"
             android:layout_height="wrap_content"

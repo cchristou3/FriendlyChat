@@ -20,6 +20,11 @@ public class FirebaseQueryLiveData extends LiveData<List<FriendlyMessage>> {
     private List<FriendlyMessage> messageList = new ArrayList<>();
     private final Query query;
     private MessagesValueEventListener mValueEventListener;
+    private MessageRecyclerViewAdapter mMessageRecyclerViewAdapter;
+
+    public void setMessageRecyclerViewAdapter(MessageRecyclerViewAdapter mMessageRecyclerViewAdapter) {
+        this.mMessageRecyclerViewAdapter = mMessageRecyclerViewAdapter;
+    }
 
     public FirebaseQueryLiveData(Query query) {
         this.query = query;
@@ -29,6 +34,14 @@ public class FirebaseQueryLiveData extends LiveData<List<FriendlyMessage>> {
         if(mValueEventListener != null) {
             query.removeEventListener(mValueEventListener);
         }
+    }
+
+
+
+    @Nullable
+    @Override
+    public List<FriendlyMessage> getValue() {
+        return messageList;
     }
 
     @Override
@@ -60,6 +73,7 @@ public class FirebaseQueryLiveData extends LiveData<List<FriendlyMessage>> {
                 // Deserialize the message from the database into a FriendlyMessage object
                 messageList.add(snapshot.getValue(FriendlyMessage.class));
                 setValue(messageList);
+                mMessageRecyclerViewAdapter.notifyItemInserted(messageList.size()-1);
             }
         }
 

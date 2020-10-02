@@ -7,4 +7,9 @@ public class MessagesRepository {
         // push() creates a new node and appends the given object.
         MessagesViewModel.GetDatabaseRef().push().setValue(friendlyMessage);
     }
+
+    void RemoveAllMessages(){
+        // Delete all messages within the real-time database
+        MessagesViewModel.GetDatabaseRef().setValue(null);
+    }
 }

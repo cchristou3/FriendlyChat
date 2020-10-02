@@ -17,6 +17,5 @@ public class MessagesViewModel extends ViewModel {
     @NonNull
     public FirebaseQueryLiveData getMessagesLiveData(){
         return liveData;
-
     }
 }
