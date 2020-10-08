@@ -1,4 +1,4 @@
-package com.google.firebase.udacity.friendlychat;
+package com.google.firebase.udacity.friendlychat.Adapter;
 
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -9,7 +9,9 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.google.firebase.udacity.friendlychat.View.MainActivity;
 import com.google.firebase.udacity.friendlychat.databinding.ItemMessageBinding;
+import com.google.firebase.udacity.friendlychat.dto.FriendlyMessage;
 
 import java.util.List;
 
