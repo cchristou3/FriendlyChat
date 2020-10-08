@@ -1,8 +1,10 @@
-package com.google.firebase.udacity.friendlychat;
+package com.google.firebase.udacity.friendlychat.Observer;
 
 import android.util.Log;
 
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.firebase.udacity.friendlychat.View.MainActivity;
 
 public class MessageRVAdapterDataObserver extends RecyclerView.AdapterDataObserver {
     private RecyclerView mRecyclerView;

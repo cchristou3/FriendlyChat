@@ -1,4 +1,4 @@
-package com.google.firebase.udacity.friendlychat;
+package com.google.firebase.udacity.friendlychat.View;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -21,10 +21,19 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.firebase.ui.auth.AuthUI;
+import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.udacity.friendlychat.Adapter.MessageRecyclerViewAdapter;
+import com.google.firebase.udacity.friendlychat.LiveData.FirebaseQueryLiveData;
+import com.google.firebase.udacity.friendlychat.Observer.MessageRVAdapterDataObserver;
+import com.google.firebase.udacity.friendlychat.R;
+import com.google.firebase.udacity.friendlychat.Repository.MessagesRepository;
+import com.google.firebase.udacity.friendlychat.ViewModel.MessagesViewModel;
+import com.google.firebase.udacity.friendlychat.dto.FriendlyMessage;
 
 import java.util.Arrays;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -111,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
         // Send button sends a message and clears the EditText
         mSendButton.setOnClickListener(view -> {
             FriendlyMessage friendlyMessage = new FriendlyMessage(
-                    mMessageEditText.getText().toString(), mUsername, null
+                    mMessageEditText.getText().toString(), mUsername, null, new Timestamp(new Date())
             );
             // Add message to the firebase database
             mMessagesRepository.SendMessage(friendlyMessage);
@@ -125,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
         mUsername = ANONYMOUS;
         if(liveData != null) {
             liveData.removeObservers(this);
-            liveData.detachDatabaseListener();
+//            liveData.detachDatabaseListener();
         }
     }
 
@@ -150,19 +159,20 @@ public class MainActivity extends AppCompatActivity {
         MessagesViewModel viewModel = new ViewModelProvider(this, modelFactory).get(MessagesViewModel.class);
         liveData = viewModel.getMessagesLiveData();
 
+        // Initialize message ListView and its adapter
+        // Create a new MessageRecyclerViewAdapter instance and pass it the list of messages
+        mMessageAdapter = new MessageRecyclerViewAdapter(liveData.getValue());
+        // Pass adapter and activity instance object to LiveData
+        liveData.setMessageRecyclerViewAdapter(mMessageAdapter);
+        liveData.setMainActivity(this);
+        // Register an observer for the adapter's data
+        mMessageAdapter.registerAdapterDataObserver(new MessageRVAdapterDataObserver(mMessageRecyclerView));
+        // Set adapter to RecyclerView reference
+        mMessageRecyclerView.setAdapter(mMessageAdapter);
+
         // When you update the value stored in the LiveData object, it triggers all registered observers
         liveData.observe(this, friendlyMessages -> {
-            // Initialize message ListView and its adapter
-            if (mMessageAdapter == null){
-                // Create a new MessageRecyclerViewAdapter instance and pass it the list of messages
-                mMessageAdapter = new MessageRecyclerViewAdapter(friendlyMessages);
-                // Pass adapter object to LiveData
-                liveData.setMessageRecyclerViewAdapter(mMessageAdapter);
-                // Register an observer for the adapter's data
-                mMessageAdapter.registerAdapterDataObserver(new MessageRVAdapterDataObserver(mMessageRecyclerView));
-                // Set adapter to RecyclerView reference
-                mMessageRecyclerView.setAdapter(mMessageAdapter);
-            }
+
         });
     }
 

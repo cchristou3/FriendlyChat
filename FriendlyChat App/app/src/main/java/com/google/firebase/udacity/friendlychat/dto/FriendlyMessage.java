@@ -1,20 +1,24 @@
-package com.google.firebase.udacity.friendlychat;
+package com.google.firebase.udacity.friendlychat.dto;
 
 import androidx.annotation.NonNull;
+
+import com.google.firebase.Timestamp;
 
 public class FriendlyMessage {
 
     private String text;
     private String name;
     private String photoUrl;
+    private Timestamp timestamp;
 
     public FriendlyMessage() {
     }
 
-    public FriendlyMessage(String text, String name, String photoUrl) {
+    public FriendlyMessage(String text, String name, String photoUrl, Timestamp timestamp) {
         this.text = text;
         this.name = name;
         this.photoUrl = photoUrl;
+        this.timestamp = timestamp;
     }
 
     public String getText() {
@@ -41,11 +45,20 @@ public class FriendlyMessage {
         this.photoUrl = photoUrl;
     }
 
+    public Timestamp getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(Timestamp timestamp) {
+        this.timestamp = timestamp;
+    }
+
     @NonNull
     @Override
     public String toString() {
-        return "text: "+text+
-               " name: "+name+
-                " photoUrl: "+photoUrl;
+        return "text: " + text +
+                " name: " + name +
+                " photoUrl: " + photoUrl +
+                " timestamp: " + timestamp;
     }
 }
