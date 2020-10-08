@@ -4,3 +4,4 @@ This project is based on Firebase's Udacity 'Firebase in a Weekend (Android)' co
 The course itself is an introduction to the Firebase Real-time database. Lastly, the course
 also gives a brief preview of Firebase's core features(e.g. Cloud Storage, Remote Config, Cloud
 Functions).
+Further, the project's aim is to both experiment and familiarize with Firebase's APIs.
