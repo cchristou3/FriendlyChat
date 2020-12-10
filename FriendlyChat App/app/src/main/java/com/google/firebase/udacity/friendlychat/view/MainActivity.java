@@ -1,6 +1,7 @@
-package com.google.firebase.udacity.friendlychat.View;
+package com.google.firebase.udacity.friendlychat.view;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -14,23 +15,29 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.firebase.ui.auth.AuthMethodPickerLayout;
 import com.firebase.ui.auth.AuthUI;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.udacity.friendlychat.Adapter.MessageRecyclerViewAdapter;
-import com.google.firebase.udacity.friendlychat.LiveData.FirebaseQueryLiveData;
-import com.google.firebase.udacity.friendlychat.Observer.MessageRVAdapterDataObserver;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
+import com.google.firebase.udacity.friendlychat.FirebaseQueryLiveData;
+import com.google.firebase.udacity.friendlychat.MessageRVAdapterDataObserver;
+import com.google.firebase.udacity.friendlychat.MessageRecyclerViewAdapter;
 import com.google.firebase.udacity.friendlychat.R;
-import com.google.firebase.udacity.friendlychat.Repository.MessagesRepository;
-import com.google.firebase.udacity.friendlychat.ViewModel.MessagesViewModel;
-import com.google.firebase.udacity.friendlychat.dto.FriendlyMessage;
+import com.google.firebase.udacity.friendlychat.data.dto.FriendlyMessage;
+import com.google.firebase.udacity.friendlychat.data.repository.MessagesRepository;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -62,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
     // Firebase instance variables
     private FirebaseAuth mFirebaseAuth;
     private FirebaseAuth.AuthStateListener mAuthStateListener;
+    private StorageReference mChatPhotosStorageReference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,21 +91,30 @@ public class MainActivity extends AppCompatActivity {
         mMessageRecyclerView.setHasFixedSize(true);
 
         // Initialize Firebase Components
+        mChatPhotosStorageReference = FirebaseStorage.getInstance().getReference().child("chat_photos");
         mFirebaseAuth = FirebaseAuth.getInstance();
         mAuthStateListener = firebaseAuth -> {
             FirebaseUser user = firebaseAuth.getCurrentUser();
-            if (user != null){
+            if (user != null) {
                 // User is signed in
                 onSignedInInitialize(user.getDisplayName());
             } else {
                 // User is signed out
                 onSignOutCleanUp();
+                AuthMethodPickerLayout customLayout = new AuthMethodPickerLayout
+                        .Builder(R.layout.activity_customised_login)
+                        .setGoogleButtonId(R.id.activity_customised_login_sign_in_button)
+                        .setEmailButtonId(R.id.activity_customised_login_email_button)
+                        .build();
+
                 startActivityForResult(
-                        AuthUI.getInstance()
+                        AuthUI.getInstance(FirebaseApp.initializeApp(this))
                                 .createSignInIntentBuilder()
+                                .setAuthMethodPickerLayout(customLayout)
                                 .setIsSmartLockEnabled(false) // automatically save the user's credentials = disabled
                                 .setAvailableProviders(Arrays.asList(
                                         new AuthUI.IdpConfig.GoogleBuilder().build(),
+                                        // set email builder but hide its button from the layout => Customization
                                         new AuthUI.IdpConfig.EmailBuilder().build()))
                                 .build(),
                         RC_SIGN_IN);
@@ -111,7 +128,13 @@ public class MainActivity extends AppCompatActivity {
         mProgressBar.setVisibility(ProgressBar.INVISIBLE);
 
         // ImagePickerButton shows an image picker to upload a image for a message - TODO
-        mPhotoPickerButton.setOnClickListener(view -> { });
+        mPhotoPickerButton.setOnClickListener(view -> {
+            // Create an intent for accessing the device's content (gallery)
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.setType("image/jpeg");
+            intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+            startActivityForResult(Intent.createChooser(intent, "Complete action using"), RC_PHOTO_PICKER);
+        });
 
         // Enable Send button when there's text to send
         mMessageEditText.addTextChangedListener(getTextWatcher());
@@ -132,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void onSignOutCleanUp() {
         mUsername = ANONYMOUS;
-        if(liveData != null) {
+        if (liveData != null) {
             liveData.removeObservers(this);
 //            liveData.detachDatabaseListener();
         }
@@ -141,13 +164,41 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == RC_SIGN_IN){
-            if(resultCode == RESULT_OK){
+        if (requestCode == RC_SIGN_IN) {
+            if (resultCode == RESULT_OK) {
                 Toast.makeText(this, "Signed in!", Toast.LENGTH_SHORT).show();
-            }else {
+            } else {
                 Toast.makeText(this, "Signed in cancelled!", Toast.LENGTH_SHORT).show();
                 finish();
             }
+        } else if (requestCode == RC_PHOTO_PICKER && resultCode == RESULT_OK) {
+            Uri selectedImageUri = data.getData();
+
+            // Get a reference to store file at chat_photos/<FILENAME>
+            StorageReference photoRef = mChatPhotosStorageReference.child(selectedImageUri.getLastPathSegment());
+
+            // Upload file to Firebase storage
+            UploadTask uploadPhotoTask = photoRef.putFile(selectedImageUri);
+            Task<Uri> uriTask = uploadPhotoTask.continueWithTask(task -> {
+                if (!task.isSuccessful()) throw task.getException();
+
+                // Continue with the task to get the URL
+                return photoRef.getDownloadUrl();
+            }).addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    // Access the download URL
+                    Uri photoDownloadUri = task.getResult();
+
+                    // Store to database
+                    FriendlyMessage friendlyMessage =
+                            new FriendlyMessage(null,
+                                    mUsername,
+                                    photoDownloadUri
+                                            .toString(),
+                                    new Timestamp(new Date()));
+                    mMessagesRepository.SendMessage(friendlyMessage);
+                }
+            });
         }
     }
 
@@ -198,9 +249,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.sign_out_menu:
+                //AuthUI.getInstance().silentSignIn();
                 AuthUI.getInstance().signOut(this);
                 return true;
             default:
@@ -208,21 +260,20 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    TextWatcher getTextWatcher(){
+    @NonNull
+    @org.jetbrains.annotations.Contract(value = " -> new", pure = true)
+    private TextWatcher getTextWatcher() {
         return new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) { }
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) { /* ignore */ }
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                if (charSequence.toString().trim().length() > 0) {
-                    mSendButton.setEnabled(true);
-                } else {
-                    mSendButton.setEnabled(false);
-                }
+                mSendButton.setEnabled(charSequence.toString().trim().length() > 0);
             }
+
             @Override
-            public void afterTextChanged(Editable editable) { }
+            public void afterTextChanged(Editable editable) { /* ignore */ }
         };
     }
 }

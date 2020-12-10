@@ -1,11 +1,11 @@
-package com.google.firebase.udacity.friendlychat.ViewModel;
+package com.google.firebase.udacity.friendlychat.view;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.ViewModel;
 
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.udacity.friendlychat.LiveData.FirebaseQueryLiveData;
+import com.google.firebase.udacity.friendlychat.FirebaseQueryLiveData;
 
 public class MessagesViewModel extends ViewModel {
     private static final CollectionReference MESSAGES_COLLECTION_REF =

@@ -1,4 +1,4 @@
-package com.google.firebase.udacity.friendlychat.Adapter;
+package com.google.firebase.udacity.friendlychat;
 
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -9,25 +9,15 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.google.firebase.udacity.friendlychat.View.MainActivity;
+import com.google.firebase.udacity.friendlychat.data.dto.FriendlyMessage;
 import com.google.firebase.udacity.friendlychat.databinding.ItemMessageBinding;
-import com.google.firebase.udacity.friendlychat.dto.FriendlyMessage;
+import com.google.firebase.udacity.friendlychat.view.MainActivity;
 
 import java.util.List;
 
 public class MessageRecyclerViewAdapter extends RecyclerView.Adapter<MessageRecyclerViewAdapter.MyViewHolder> {
     private List<FriendlyMessage> mDataset;
     private int currentListSize = 0;
-    // Provide a reference to the views for each data item
-    // Complex data items may need more than one view per item, and
-    // you provide access to all the views for a data item in a view holder
-    public static class MyViewHolder extends RecyclerView.ViewHolder {
-        private ItemMessageBinding binding;
-        public MyViewHolder(ItemMessageBinding view) {
-            super(view.getRoot());
-            binding = view;
-        }
-    }
 
     // Provide a suitable constructor (depends on the kind of dataset)
     public MessageRecyclerViewAdapter(List<FriendlyMessage> myDataset) {
@@ -45,13 +35,13 @@ public class MessageRecyclerViewAdapter extends RecyclerView.Adapter<MessageRecy
                                                                       int viewType) {
         return new MyViewHolder(
                 ItemMessageBinding
-                        .inflate(LayoutInflater.from(parent.getContext()), parent,false));
+                        .inflate(LayoutInflater.from(parent.getContext()), parent, false));
     }
 
     @Override
     public void onDetachedFromRecyclerView(@NonNull RecyclerView recyclerView) {
         super.onDetachedFromRecyclerView(recyclerView);
-        Log.d(MainActivity.TAG,"onDetachedFromRecyclerView");
+        Log.d(MainActivity.TAG, "onDetachedFromRecyclerView");
     }
 
     @Override
@@ -91,6 +81,18 @@ public class MessageRecyclerViewAdapter extends RecyclerView.Adapter<MessageRecy
     @Override
     public int getItemCount() {
         return mDataset.size();
+    }
+
+    // Provide a reference to the views for each data item
+    // Complex data items may need more than one view per item, and
+    // you provide access to all the views for a data item in a view holder
+    public static class MyViewHolder extends RecyclerView.ViewHolder {
+        private ItemMessageBinding binding;
+
+        public MyViewHolder(ItemMessageBinding view) {
+            super(view.getRoot());
+            binding = view;
+        }
     }
 }
 
