@@ -1,9 +1,9 @@
-package com.google.firebase.udacity.friendlychat.Repository;
+package com.google.firebase.udacity.friendlychat.data.repository;
 
 import android.util.Log;
 
-import com.google.firebase.udacity.friendlychat.ViewModel.MessagesViewModel;
-import com.google.firebase.udacity.friendlychat.dto.FriendlyMessage;
+import com.google.firebase.udacity.friendlychat.data.dto.FriendlyMessage;
+import com.google.firebase.udacity.friendlychat.view.MessagesViewModel;
 
 import java.util.HashMap;
 

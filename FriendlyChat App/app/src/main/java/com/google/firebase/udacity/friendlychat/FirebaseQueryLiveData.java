@@ -1,4 +1,4 @@
-package com.google.firebase.udacity.friendlychat.LiveData;
+package com.google.firebase.udacity.friendlychat;
 
 import android.app.Activity;
 import android.util.Log;
@@ -9,26 +9,25 @@ import androidx.lifecycle.LiveData;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.Query;
-import com.google.firebase.udacity.friendlychat.Adapter.MessageRecyclerViewAdapter;
-import com.google.firebase.udacity.friendlychat.View.MainActivity;
-import com.google.firebase.udacity.friendlychat.dto.FriendlyMessage;
+import com.google.firebase.udacity.friendlychat.data.dto.FriendlyMessage;
+import com.google.firebase.udacity.friendlychat.view.MainActivity;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class FirebaseQueryLiveData extends LiveData<List<FriendlyMessage>> {
 
-    private List<FriendlyMessage> messageList = new ArrayList<>();
     private final CollectionReference collectionReference;
+    private List<FriendlyMessage> messageList = new ArrayList<>();
     private MessageRecyclerViewAdapter mMessageRecyclerViewAdapter;
     private Activity mainActivity;
 
-    public void setMessageRecyclerViewAdapter(MessageRecyclerViewAdapter mMessageRecyclerViewAdapter) {
-        this.mMessageRecyclerViewAdapter = mMessageRecyclerViewAdapter;
-    }
-
     public FirebaseQueryLiveData(CollectionReference collectionReference) {
         this.collectionReference = collectionReference;
+    }
+
+    public void setMessageRecyclerViewAdapter(MessageRecyclerViewAdapter mMessageRecyclerViewAdapter) {
+        this.mMessageRecyclerViewAdapter = mMessageRecyclerViewAdapter;
     }
 
     public void setMainActivity(Activity mainActivity) {

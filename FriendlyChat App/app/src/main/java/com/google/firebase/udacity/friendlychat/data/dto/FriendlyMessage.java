@@ -1,4 +1,4 @@
-package com.google.firebase.udacity.friendlychat.dto;
+package com.google.firebase.udacity.friendlychat.data.dto;
 
 import androidx.annotation.NonNull;
 
