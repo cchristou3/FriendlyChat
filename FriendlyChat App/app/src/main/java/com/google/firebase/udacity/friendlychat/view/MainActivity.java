@@ -127,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
         // Initialize progress bar
         mProgressBar.setVisibility(ProgressBar.INVISIBLE);
 
-        // ImagePickerButton shows an image picker to upload a image for a message - TODO
+        // ImagePickerButton shows an image picker to upload a image for a message
         mPhotoPickerButton.setOnClickListener(view -> {
             // Create an intent for accessing the device's content (gallery)
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
